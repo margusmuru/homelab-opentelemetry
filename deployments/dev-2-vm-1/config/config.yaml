@@ -32,12 +32,14 @@ processors:
         statements:
           - delete_key(attributes, "process.command_args")
 exporters:
+  # Tempo
   otlp:
-    endpoint: "http://emtatest.webmedia.int:4327"
+    endpoint: "tempo:4327"
     tls:
       insecure: true
   debug:
     verbosity: detailed
+  # Prometheus
   prometheus:
     endpoint: '0.0.0.0:8080'
 #    const_labels:
@@ -46,8 +48,9 @@ exporters:
     metric_expiration: 180m
     resource_to_telemetry_conversion:
       enabled: true
+  # Loki
   otlphttp/logs:
-    endpoint: "http://emtatest.webmedia.int:3100/otlp"
+    endpoint: "loki:3100/otlp"
     tls:
       insecure: true    
 service:
