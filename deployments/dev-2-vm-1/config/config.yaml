@@ -1,0 +1,66 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: 
+
+  attributes/drop-command-args:
+    actions:
+      - key: process.command_args
+        action: delete
+
+  transform/remove_log_command_args:
+    log_statements:
+      - context: log
+        statements:
+          - delete_key(attributes, "process.command_args")
+      - context: resource
+        statements:
+          - delete_key(attributes, "process.command_args")
+  
+  transform/remove_trace_command_args:
+    trace_statements:
+      - context: span
+        statements:
+          - delete_key(attributes, "process.command_args")
+      - context: resource
+        statements:
+          - delete_key(attributes, "process.command_args")
+exporters:
+  otlp:
+    endpoint: "http://emtatest.webmedia.int:4327"
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed
+  prometheus:
+    endpoint: '0.0.0.0:8080'
+#    const_labels:
+#      label1: demo-label
+    send_timestamps: true
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+  otlphttp/logs:
+    endpoint: "http://emtatest.webmedia.int:3100/otlp"
+    tls:
+      insecure: true    
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, transform/remove_trace_command_args]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch, transform/remove_log_command_args]
+      exporters: [otlphttp/logs]

@@ -15,10 +15,10 @@ services:
       - 8080:8080 #prometheus exporter
     restart: unless-stopped
     networks:
-      - monitoring
+      - grafana
 networks:
-  monitoring:
-    name: monitoring
+  grafana:
+    name: grafana
     driver: bridge
     external: true
     attachable: true
