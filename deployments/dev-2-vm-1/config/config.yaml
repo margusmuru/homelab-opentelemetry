@@ -23,7 +23,7 @@ processors:
         statements:
           - delete_key(attributes, "process.command_args")
   
-  transform/remove_trace_command_args:
+  transform/removetraceattributes:
     trace_statements:
       - context: span
         statements:
@@ -58,7 +58,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, transform/remove_trace_command_args]
+      processors: [batch, transform/removetraceattributes]
       exporters: [otlp]
     metrics:
       receivers: [otlp]
