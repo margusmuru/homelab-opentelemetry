@@ -41,7 +41,7 @@ exporters:
     verbosity: detailed
   # Prometheus
   prometheus:
-    endpoint: '0.0.0.0:8080'
+    endpoint: 'http://192.168.40.112:9090'
 #    const_labels:
 #      label1: demo-label
     send_timestamps: true
