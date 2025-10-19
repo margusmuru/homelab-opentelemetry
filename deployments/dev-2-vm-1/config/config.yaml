@@ -50,7 +50,7 @@ exporters:
       enabled: true
   # Loki
   otlphttp/logs:
-    endpoint: "http://lok192.168.40.112i:3100/otlp"
+    endpoint: "http://192.168.40.112:3100/otlp"
     tls:
       insecure: true    
 service:
