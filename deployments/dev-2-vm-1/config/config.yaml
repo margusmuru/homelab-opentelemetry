@@ -41,7 +41,8 @@ exporters:
     verbosity: detailed
   # Prometheus
   prometheus:
-    endpoint: '192.168.40.112:9090'
+    # prometheus job will connect to this port
+    endpoint: '0.0.0.0:8080'
 #    const_labels:
 #      label1: demo-label
     send_timestamps: true
