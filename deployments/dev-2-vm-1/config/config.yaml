@@ -34,7 +34,7 @@ processors:
 exporters:
   # Tempo
   otlp:
-    endpoint: "dns+tempo:4327"
+    endpoint: "http://tempo:4327"
     tls:
       insecure: true
   debug:
@@ -50,7 +50,7 @@ exporters:
       enabled: true
   # Loki
   otlphttp/logs:
-    endpoint: "dns+loki:3100/otlp"
+    endpoint: "http://loki:3100/otlp"
     tls:
       insecure: true    
 service:
