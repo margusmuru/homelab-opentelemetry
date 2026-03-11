@@ -40,19 +40,10 @@ exporters:
   # ---------------------------------------------------
   # 3. LOGS (Loki)
   # ---------------------------------------------------
-  loki:
-    endpoint: "http://192.168.40.112:3100/loki/api/v1/push" #dev-2-vm-1
-    default_labels_enabled:
-      exporter: false
-      job: true
-    # CRITICAL: This tells Loki which OTel attributes should become searchable Indexes.
-    # If you don't list them here, you can't filter by them in Grafana dropdowns!
-    labels:
-      attributes:
-        record:
-          - "service.name"
-          - "deployment.environment" # Identifies Dev vs Prod
-          - "level"
+  otlphttp/loki:
+    endpoint: "http://192.168.40.112:3100/otlp" #dev-2-vm-1
+    tls:
+      insecure: true
 
 service:
   # Internal Collector logging
@@ -75,4 +66,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [loki]
+      exporters: [otlphttp/loki]
