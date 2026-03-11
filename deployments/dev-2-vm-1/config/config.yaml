@@ -31,7 +31,7 @@ exporters:
   # ---------------------------------------------------
   otlp/tempo:
     # Ensure this points to Tempo's gRPC port
-    endpoint: "192.168.40.112:4317" #dev-2-vm-1
+    endpoint: "192.168.40.112:4327" #dev-2-vm-1
     tls:
       insecure: true
 
