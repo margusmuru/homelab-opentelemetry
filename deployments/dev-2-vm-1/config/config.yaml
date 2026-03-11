@@ -18,6 +18,13 @@ processors:
     timeout: 1s
     send_batch_size: 1024
 
+ # Forcibly stamp all data passing through this collector as "dev"
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: "dev"
+        action: upsert # "upsert" means add it if missing, or overwrite if the app sent something else
+
 exporters:
   # ---------------------------------------------------
   # 1. TRACES (Tempo)
@@ -55,15 +62,15 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, resource, batch]
       exporters: [otlp/tempo]
     
     metrics:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, resource, batch]
       exporters: [prometheusremotewrite]
     
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter, resource, batch]
       exporters: [otlphttp/loki]
