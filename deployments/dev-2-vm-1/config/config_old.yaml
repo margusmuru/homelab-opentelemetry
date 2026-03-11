@@ -1,0 +1,71 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        max_request_body_size: 67108864  # 64MB
+
+processors:
+  batch: 
+
+  attributes/drop-command-args:
+    actions:
+      - key: process.command_args
+        action: delete
+
+  transform/remove_log_command_args:
+    log_statements:
+      - context: log
+        statements:
+          - delete_key(attributes, "process.command_args")
+      - context: resource
+        statements:
+          - delete_key(attributes, "process.command_args")
+  
+  transform/removetraceattributes:
+    trace_statements:
+      - context: span
+        statements:
+          - delete_key(attributes, "process.command_args")
+      - context: resource
+        statements:
+          - delete_key(attributes, "process.command_args")
+exporters:
+  # Tempo
+  otlp:
+    endpoint: "http://192.168.40.112:4327"
+    tls:
+      insecure: true
+  debug:
+    verbosity: detailed
+  # Prometheus
+  prometheus:
+    # prometheus job will connect to this port
+    endpoint: '0.0.0.0:8080'
+#    const_labels:
+#      label1: demo-label
+    send_timestamps: true
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+  # Loki
+  otlphttp/logs:
+    endpoint: "http://192.168.40.112:3100/otlp"
+    tls:
+      insecure: true    
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, transform/removetraceattributes]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch, transform/remove_log_command_args]
+      exporters: [otlphttp/logs]

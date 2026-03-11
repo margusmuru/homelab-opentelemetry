@@ -2,70 +2,77 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
+        endpoint: "0.0.0.0:4317"
       http:
-        endpoint: 0.0.0.0:4318
-        max_request_body_size: 67108864  # 64MB
+        endpoint: "0.0.0.0:4318"
 
 processors:
-  batch: 
+  # Prevents the Collector from using too much RAM and crashing
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1000
+    spike_limit_mib: 200
 
-  attributes/drop-command-args:
-    actions:
-      - key: process.command_args
-        action: delete
+  # Batches data to reduce network overhead
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
 
-  transform/remove_log_command_args:
-    log_statements:
-      - context: log
-        statements:
-          - delete_key(attributes, "process.command_args")
-      - context: resource
-        statements:
-          - delete_key(attributes, "process.command_args")
-  
-  transform/removetraceattributes:
-    trace_statements:
-      - context: span
-        statements:
-          - delete_key(attributes, "process.command_args")
-      - context: resource
-        statements:
-          - delete_key(attributes, "process.command_args")
 exporters:
-  # Tempo
-  otlp:
-    endpoint: "http://192.168.40.112:4327"
+  # ---------------------------------------------------
+  # 1. TRACES (Tempo)
+  # ---------------------------------------------------
+  otlp/tempo:
+    # Ensure this points to Tempo's gRPC port
+    endpoint: "192.168.40.112:4317" #dev-2-vm-1
     tls:
       insecure: true
-  debug:
-    verbosity: detailed
-  # Prometheus
-  prometheus:
-    # prometheus job will connect to this port
-    endpoint: '0.0.0.0:8080'
-#    const_labels:
-#      label1: demo-label
-    send_timestamps: true
-    metric_expiration: 180m
+
+  # ---------------------------------------------------
+  # 2. METRICS (Prometheus)
+  # ---------------------------------------------------
+  prometheusremotewrite:
+    endpoint: "http://192.168.40.112:9090/api/v1/write" #dev-2-vm-1
+    # CRITICAL: This converts OTel attributes (like service.name) into Prometheus labels.
     resource_to_telemetry_conversion:
       enabled: true
-  # Loki
-  otlphttp/logs:
-    endpoint: "http://192.168.40.112:3100/otlp"
-    tls:
-      insecure: true    
+
+  # ---------------------------------------------------
+  # 3. LOGS (Loki)
+  # ---------------------------------------------------
+  loki:
+    endpoint: "http://192.168.40.112:3100/loki/api/v1/push" #dev-2-vm-1
+    default_labels_enabled:
+      exporter: false
+      job: true
+    # CRITICAL: This tells Loki which OTel attributes should become searchable Indexes.
+    # If you don't list them here, you can't filter by them in Grafana dropdowns!
+    labels:
+      attributes:
+        record:
+          - "service.name"
+          - "deployment.environment" # Identifies Dev vs Prod
+          - "level"
+
 service:
+  # Internal Collector logging
+  telemetry:
+    logs:
+      level: info
+
+  # The Routing Pipes
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, transform/removetraceattributes]
-      exporters: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    
     metrics:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheusremotewrite]
+    
     logs:
       receivers: [otlp]
-      processors: [batch, transform/remove_log_command_args]
-      exporters: [otlphttp/logs]
+      processors: [memory_limiter, batch]
+      exporters: [loki]
