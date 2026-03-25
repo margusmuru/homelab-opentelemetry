@@ -1,0 +1,76 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  # Prevents the Collector from using too much RAM and crashing
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1000
+    spike_limit_mib: 200
+
+  # Batches data to reduce network overhead
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+ # Forcibly stamp all data passing through this collector as "dev"
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: "prod"
+        action: upsert # "upsert" means add it if missing, or overwrite if the app sent something else
+
+exporters:
+  # ---------------------------------------------------
+  # 1. TRACES (Tempo)
+  # ---------------------------------------------------
+  otlp/tempo:
+    # Ensure this points to Tempo's gRPC port
+    endpoint: "192.168.40.112:4327" #dev-2-vm-1
+    tls:
+      insecure: true
+
+  # ---------------------------------------------------
+  # 2. METRICS (Prometheus)
+  # ---------------------------------------------------
+  prometheusremotewrite:
+    endpoint: "http://192.168.40.112:9090/api/v1/write" #dev-2-vm-1
+    # CRITICAL: This converts OTel attributes (like service.name) into Prometheus labels.
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # ---------------------------------------------------
+  # 3. LOGS (Loki)
+  # ---------------------------------------------------
+  otlphttp/loki:
+    endpoint: "http://192.168.40.112:3100/otlp" #dev-2-vm-1
+    tls:
+      insecure: true
+
+service:
+  # Internal Collector logging
+  telemetry:
+    logs:
+      level: info
+
+  # The Routing Pipes
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/tempo]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheusremotewrite]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/loki]

@@ -1,0 +1,23 @@
+---
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.146.1
+    container_name: otel-collector-dev-2-vm-1
+    volumes:
+      - ./config/config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 1888:1888 # pprof extension
+      - 8888:8888 # Prometheus metrics exposed by the Collector
+      - 8889:8889 # Prometheus exporter metrics
+      - 13133:13133 # health_check extension
+      - 4317:4317 # OTLP gRPC receiver
+      - 4318:4318 # OTLP http receiver
+      - 8080:8080 #prometheus exporter
+    restart: unless-stopped
+    networks:
+      - grafana
+networks:
+  grafana:
+    name: grafana
+    driver: bridge
+    attachable: true

@@ -12,3 +12,14 @@ opentelemetry-dev-2-vm-1:
       changes:
         - 'deployments/dev-2-vm-1/**/*'
     - when: manual
+
+opentelemetry-prod-1-vm-1:
+  trigger:
+    include:
+      - local: deployments/prod-1-vm-1/.gitlab-ci.yml
+    strategy: mirror
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      changes:
+        - 'deployments/prod-1-vm-1/**/*'
+    - when: manual
