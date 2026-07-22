@@ -1,1 +1,4 @@
 .DS_Store
+
+# Rendered at deploy time from .env.template — never commit real values
+.env

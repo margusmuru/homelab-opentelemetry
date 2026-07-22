@@ -2,7 +2,7 @@
 services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.156.0
-    container_name: otel-collector-dev-2-vm-1
+    container_name: otel-collector-prod-1-vm-1
     volumes:
       - ./config/config.yaml:/etc/otelcol-contrib/config.yaml
     ports:

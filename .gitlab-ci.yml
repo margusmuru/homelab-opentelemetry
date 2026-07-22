@@ -2,24 +2,27 @@ stages:
   - test
   - deploy
 
-opentelemetry-dev-2-vm-1:
-  trigger:
-    include:
-      - local: deployments/dev-2-vm-1/.gitlab-ci.yml
-    strategy: mirror
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      changes:
-        - 'deployments/dev-2-vm-1/**/*'
-    - when: manual
+include:
+# otel collector dev-2 — bind-mounted config/, grafana network, no secrets
+  - component: $CI_SERVER_FQDN/components/docker/validate-compose@~latest
+    inputs:
+      as: "lint-otel-dev-2"
+      local_path: "deployments/dev-2"
+  - component: $CI_SERVER_FQDN/components/docker/deploy-compose@~latest
+    inputs:
+      as: "deploy-otel-dev-2"
+      environment: "dev-2"                                  # host derives to dev-2-vm.margusm.dev
+      local_path: "deployments/dev-2"
+      remote_path: "deployments/opentelemetry-dev-2-vm-1"   # unchanged host dir → in-place update
 
-opentelemetry-prod-1-vm-1:
-  trigger:
-    include:
-      - local: deployments/prod-1-vm-1/.gitlab-ci.yml
-    strategy: mirror
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      changes:
-        - 'deployments/prod-1-vm-1/**/*'
-    - when: manual
+# otel collector prod-1 — same compose, prod config
+  - component: $CI_SERVER_FQDN/components/docker/validate-compose@~latest
+    inputs:
+      as: "lint-otel-prod-1"
+      local_path: "deployments/prod-1"
+  - component: $CI_SERVER_FQDN/components/docker/deploy-compose@~latest
+    inputs:
+      as: "deploy-otel-prod-1"
+      environment: "prod-1"                                 # host derives to prod-1-vm.margusm.dev
+      local_path: "deployments/prod-1"
+      remote_path: "deployments/opentelemetry-prod-1-vm-1"  # unchanged host dir → in-place update
